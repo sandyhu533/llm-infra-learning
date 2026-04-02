@@ -10,9 +10,9 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 | Category | Topics | Papers |
 |----------|--------|--------|
-| [Inference Systems](#inference-systems) | Serving, KV Cache, Scheduling, Batching | 3 |
+| [Inference Systems](#inference-systems) | Serving, KV Cache, Scheduling, Batching | 4 |
 | [Distributed Training](#distributed-training) | Parallelism, Memory Optimization, Fault Tolerance | 3 |
-| [Foundations](#foundations) | Transformer, Attention Mechanisms | 1 |
+| [Foundations](#foundations) | Transformer, Attention Mechanisms | 3 |
 | [Scheduling & SLOs](#scheduling--slos) | Latency Targets, Chunked Prefill, Capacity Planning | 2 |
 | [Memory & Compression](#memory--compression) | Quantization, Weight Compression | 2 |
 
@@ -29,7 +29,6 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 | **PagedAttention** | OS virtual memory / paging | Non-contiguous physical memory mapped via page table; copy-on-write for sharing |
 | **Prefill phase** | Query parse + compile / transaction begin | CPU-bound setup before the streaming result starts; run once, amortized |
 | **Decode phase** | Cursor iteration / streaming result set | Incremental output, one token at a time; memory-bandwidth bound, not compute |
-| **Speculative decoding** | Branch prediction / prefetching | Speculatively produce output, verify cheaply; roll back on mispredict |
 | **Tensor parallelism** | Horizontal DB sharding | Partition a large weight matrix across devices; all-reduce = scatter-gather |
 | **Pipeline parallelism** | CPU pipeline stages / staged request processing | Split model layers across devices; bubble = pipeline stall |
 | **Data parallelism** | Replica sets / read replicas | Each replica holds the full model; gradients = write quorum sync |
@@ -43,6 +42,11 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 | **MFU (Model FLOP Utilization)** | CPU utilization / IPC | How much of peak theoretical throughput you're actually using |
 | **KV cache eviction** | Buffer pool eviction (LRU/LFU) | When memory is full, decide which cached state to drop |
 | **Prefix caching** | Query result cache / memoization | Cache the KV state of a shared prefix; hit = skip recomputation |
+| **Speculative decoding** | Branch prediction / OOO execution | Cheap unit speculatively generates output; expensive unit verifies in bulk; roll back on mispredict |
+| **GQA (grouped-query attention)** | Shared read replicas per shard | Groups of query heads share one K/V head; reduces KV cache by h/G without full MQA quality loss |
+| **Multi-head attention (MHA)** | Full-mesh topology / one replica per client | Every head has its own K/V; maximum expressivity, maximum memory footprint |
+| **Chunked prefill** | HTTP/2 stream multiplexing | Slice large unit of work into small chunks; interleave with other streams to prevent head-of-line blocking |
+| **LLM serving simulator** | ns-3 / discrete-event network simulator | Model execution time + scheduling at iteration granularity; predict latency without real hardware |
 
 ---
 
@@ -55,6 +59,7 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 | [Efficient Memory Management for LLM Serving with PagedAttention](papers/inference/vllm-pagedattention.md) | SOSP '23 | Virtual memory for KV cache; eliminates fragmentation | ✅ |
 | [ORCA: A Distributed Serving System for Transformer-based Generative Models](papers/inference/orca-continuous-batching.md) | OSDI '22 | Continuous batching (iteration-level scheduling) | ✅ |
 | [Splitwise: Efficient Generative LLM Inference Using Phase Splitting](papers/inference/splitwise-pd-disaggregation.md) | ISCA '24 | Prefill-Decode disaggregation for resource efficiency | ✅ |
+| [Fast Inference from Transformers via Speculative Decoding](papers/inference/speculative-decoding.md) | ICML '23 | Draft model speculatively generates k tokens; target model verifies in one pass | ✅ |
 
 ---
 
@@ -75,7 +80,9 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 | Paper | Venue | Key Idea | Note |
 |-------|-------|----------|------|
+| [Attention Is All You Need](papers/foundations/attention-is-all-you-need.md) | NeurIPS '17 | Original Transformer architecture; origin of the KV cache and all modern LLMs | ✅ |
 | [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](papers/foundations/flash-attention.md) | NeurIPS '22 | Tiling + recomputation to reduce HBM reads/writes | ✅ |
+| [GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints](papers/foundations/gqa.md) | EMNLP '23 | Group query heads to share K/V heads; 4–8× KV cache reduction with near-MHA quality | ✅ |
 
 ---
 
@@ -85,8 +92,8 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 | Paper | Venue | Key Idea | Note |
 |-------|-------|----------|------|
-| [Sarathi-Serve: Efficient LLM Inference by Piggybacking Decodes with Chunked Prefills](papers/scheduling/sarathi-serve.md) | OSDI '24 | Chunk long prefills to prevent head-of-line blocking; piggyback decode steps | 📋 |
-| [Vidur: A Large-Scale Simulation Framework For LLM Inference](papers/scheduling/vidur.md) | MLSys '24 | Simulate serving clusters to answer capacity planning questions without real hardware | 📋 |
+| [Sarathi-Serve: Efficient LLM Inference by Piggybacking Decodes with Chunked Prefills](papers/scheduling/sarathi-serve.md) | OSDI '24 | Chunk long prefills to prevent head-of-line blocking; piggyback decode steps | ✅ |
+| [Vidur: A Large-Scale Simulation Framework For LLM Inference](papers/scheduling/vidur.md) | MLSys '24 | Simulate serving clusters to answer capacity planning questions without real hardware | ✅ |
 
 ---
 
@@ -96,8 +103,8 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 | Paper | Venue | Key Idea | Note |
 |-------|-------|----------|------|
-| [GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers](papers/compression/gptq.md) | ICLR '23 | Layer-wise INT4 quantization using second-order information; near-lossless at 4-bit | 📋 |
-| [AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration](papers/compression/awq.md) | MLSys '24 | Protect salient weights (by activation magnitude) during INT4 quantization | 📋 |
+| [GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers](papers/compression/gptq.md) | ICLR '23 | Layer-wise INT4 quantization using second-order information; near-lossless at 4-bit | ✅ |
+| [AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration](papers/compression/awq.md) | MLSys '24 | Protect salient weights (by activation magnitude) during INT4 quantization | ✅ |
 
 ---
 
@@ -120,17 +127,26 @@ If you're coming from backend/distributed systems, suggested reading order with 
 
 ```
 Foundations
-└── FlashAttention          ← "cache-oblivious blocked matmul"
-                              Understand GPU memory hierarchy (HBM vs SRAM)
-                              before everything else
+├── Attention Is All You Need  ← "full-mesh topology"
+│                                Start here: defines the KV cache, MHA, and
+│                                the architecture everything else is built on
+├── GQA                        ← "shared read replicas per shard"
+│                                Modern LLMs (LLaMA 3, Mistral) use GQA;
+│                                understand this before KV cache sizing
+└── FlashAttention             ← "cache-oblivious blocked matmul"
+                                 Understand GPU memory hierarchy (HBM vs SRAM)
+                                 before reading inference serving papers
 
 Inference Systems
-├── Orca                    ← "event loop / reactor pattern"
-│                             Continuous batching = don't block on one request
-├── vLLM (PagedAttention)   ← "OS virtual memory"
-│                             KV cache fragmentation = heap fragmentation
-└── Splitwise               ← "CQRS / read-write separation"
-                              Prefill ≠ Decode; give them different hardware
+├── Orca                       ← "event loop / reactor pattern"
+│                                Continuous batching = don't block on one request
+├── vLLM (PagedAttention)      ← "OS virtual memory"
+│                                KV cache fragmentation = heap fragmentation
+├── Speculative Decoding       ← "branch prediction / OOO execution"
+│                                Draft model = predictor; target model = verifier
+│                                2-3x speedup for latency-sensitive single requests
+└── Splitwise                  ← "CQRS / read-write separation"
+                                 Prefill ≠ Decode; give them different hardware
 
 Distributed Training
 ├── ZeRO                    ← "distributed slab allocator"
@@ -142,8 +158,16 @@ Distributed Training
                               fault tolerance, observability, config management
 
 Scheduling & SLOs (after inference basics)
-└── Sarathi-Serve           ← "head-of-line blocking prevention"
-                              Chunked prefill = HTTP/2 stream multiplexing
+├── Sarathi-Serve           ← "head-of-line blocking prevention"
+│                             Chunked prefill = HTTP/2 stream multiplexing
+└── Vidur                   ← "discrete-event network simulator"
+                              Capacity planning without real hardware
+
+Memory & Compression (when GPU memory is the bottleneck)
+├── GPTQ                    ← "lossy compression with error correction"
+│                             Second-order Hessian minimizes quantization error
+└── AWQ                     ← "optimize the hot path (1% of weights)"
+                              Scale salient channels before quantizing; faster than GPTQ
 ```
 
 ---
