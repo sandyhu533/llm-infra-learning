@@ -215,6 +215,18 @@ Core concepts that appear across all papers in this repo.
 
 ---
 
+## Source Code Reading
+
+Paper notes explain what and why. The [code/](code/README.md) section covers how — tracing key frameworks from entry point to kernel call.
+
+| Framework | Learning Goal | Read After |
+|-----------|--------------|------------|
+| [vLLM](code/inference/vllm.md) | Continuous batching + paged KV cache in production code | ORCA + vLLM papers |
+| [DeepSpeed ZeRO](code/training/deepspeed-zero.md) | Stage 2/3 optimizer: reduce-scatter, all-gather, param fetch/release | ZeRO paper |
+| [Megatron-LM](code/training/megatron-lm.md) | ColumnParallelLinear, RowParallelLinear, and 1F1B pipeline schedule | Megatron-LM paper |
+
+---
+
 ## Contributing
 
 Found an error? Have a paper to add? See [CONTRIBUTING.md](CONTRIBUTING.md).
