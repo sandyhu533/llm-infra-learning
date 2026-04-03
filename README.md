@@ -6,6 +6,110 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 ---
 
+## How to Use This Repo
+
+Each paper note follows a consistent structure (see [Template](papers/TEMPLATE.md)):
+
+1. **TL;DR** — one paragraph summary of the key contribution
+2. **Problem** — what gap does this paper address
+3. **Key Ideas** — core technical decisions, with diagrams where helpful
+4. **System Tradeoffs** — what the design optimizes for, and at what cost
+5. **Connections** — how this relates to other papers or production systems
+6. **Questions** — open questions and things to dig deeper on
+
+---
+
+## Reading Roadmap
+
+If you're coming from backend/distributed systems, follow this path. Each paper builds on the previous — jumping ahead without the prerequisites means missing the "why."
+
+### Quick Reference — Flat Sequence
+
+| # | Paper | Why this order |
+|---|-------|---------------|
+| 1 | Attention Is All You Need | Defines KV cache, MHA, and the decode loop — the vocabulary for everything else |
+| 2 | GQA | Modern production models all use GQA; you need this to reason about KV cache sizing |
+| 3 | FlashAttention | Teaches GPU memory hierarchy (HBM vs SRAM); prerequisite for understanding any serving bottleneck |
+| 4 | ORCA | First principles of serving: iteration-level scheduling, the reactor pattern for GPUs |
+| 5 | vLLM / PagedAttention | Fixes KV cache fragmentation with virtual memory; builds directly on ORCA's scheduling model |
+| 6 | Speculative Decoding | A latency-only optimization; orthogonal to memory, easier to understand after vLLM |
+| 7 | Splitwise | Cluster-level CQRS: only makes sense once you understand prefill vs decode resource profiles |
+| 8 | ZeRO | Training track starts here: memory is the binding constraint; partition it first |
+| 9 | Megatron-LM | Model parallelism strategies (TP/PP/DP); builds on ZeRO's memory intuition |
+| 10 | MegaScale | What ZeRO + Megatron look like at 10K GPUs in production; engineering > algorithms |
+| 11 | Sarathi-Serve | Scheduling refinement: chunked prefill prevents head-of-line blocking; needs ORCA + vLLM first |
+| 12 | Vidur | Simulation framework; only useful if you understand what it's simulating (papers 4–7) |
+| 13 | GPTQ | Post-training quantization; independent thread, but easier after you understand serving memory pressure |
+| 14 | AWQ | Refines GPTQ by protecting salient weights; read GPTQ first |
+
+---
+
+### Detailed Roadmap
+
+**Phase 1 — Foundations** (papers 1–3)
+
+Goal: understand the KV cache, attention variants, and GPU memory hierarchy. Without these, serving paper motivations are opaque.
+
+- **1. [Attention Is All You Need](papers/foundations/attention-is-all-you-need.md)**
+  Defines the Transformer, the KV cache, and the autoregressive decode loop. Everything downstream is an optimization of this baseline.
+
+- **2. [GQA](papers/foundations/gqa.md)**
+  LLaMA 3, Mistral, Gemma all use GQA instead of MHA. Read before vLLM so you understand what's being cached and at what size.
+
+- **3. [FlashAttention](papers/foundations/flash-attention.md)**
+  HBM is slow; SRAM is fast; tile the attention computation to stay in SRAM. After this, "memory-bandwidth bound" has a concrete meaning.
+
+**Phase 2 — Inference Systems** (papers 4–7)
+
+Goal: understand how a production serving system works end-to-end. Read in strict order — each paper patches a bottleneck exposed by the previous.
+
+- **4. [ORCA](papers/inference/orca-continuous-batching.md)**
+  Iteration-level scheduling: don't wait for a full batch to finish. Establishes continuous batching as the foundational serving primitive.
+
+- **5. [vLLM / PagedAttention](papers/inference/vllm-pagedattention.md)**
+  KV cache fragmentation wastes 60–80% of GPU memory in ORCA's world. Fixed-size blocks + a page table eliminate waste and enable prefix sharing.
+
+- **6. [Speculative Decoding](papers/inference/speculative-decoding.md)**
+  Draft model generates k candidate tokens; target model verifies all k in one pass. Pure latency win; output distribution is mathematically identical to the target alone.
+
+- **7. [Splitwise](papers/inference/splitwise-pd-disaggregation.md)**
+  Prefill is compute-bound; decode is memory-bandwidth-bound. Route them to separate hardware pools sized for each workload.
+
+**Phase 3 — Distributed Training** (papers 8–10)
+
+Goal: understand how to train models that don't fit on one GPU or one node. Independent of Phase 2 — can be read in parallel if preferred.
+
+- **8. [ZeRO](papers/training/zero-memory-optimization.md)**
+  Optimizer states are 12× the parameter size at fp16 + Adam. Partition them across GPUs — each rank owns 1/N, gathers on demand.
+
+- **9. [Megatron-LM](papers/training/megatron-lm.md)**
+  3D parallelism: tensor parallel (within node), pipeline parallel (across nodes), data parallel (replicas). The canonical mental model for large-scale training. Read ZeRO first — it explains why naive data-parallel alone fails.
+
+- **10. [MegaScale](papers/training/megascale.md)**
+  Applies Megatron + ZeRO at 12K GPUs in production at ByteDance. The paper is about fault tolerance, straggler mitigation, and operational visibility — engineering problems that only appear at this scale.
+
+**Phase 4 — Scheduling & SLOs** (papers 11–12, after Phase 2)
+
+Goal: meet latency SLOs while maximizing GPU utilization. Requires Phase 2 as background.
+
+- **11. [Sarathi-Serve](papers/scheduling/sarathi-serve.md)**
+  A long prefill monopolizes the GPU for hundreds of ms, blocking all decode tokens. Chunked prefill + piggybacking ensures decodes proceed every iteration.
+
+- **12. [Vidur](papers/scheduling/vidur.md)**
+  Calibrated discrete-event simulator for LLM serving. Answers "how many GPUs do I need for X RPS at P99 < Y ms?" without real hardware.
+
+**Phase 5 — Memory & Compression** (papers 13–14, can read any time after Phase 1)
+
+Goal: fit larger models into the same hardware budget. Independent track — GPU memory pressure is the forcing function.
+
+- **13. [GPTQ](papers/compression/gptq.md)**
+  Layer-wise INT4 quantization using second-order (Hessian) information. Near-lossless quality; the principled baseline for post-training quantization.
+
+- **14. [AWQ](papers/compression/awq.md)**
+  1% of weight channels (those with large activation magnitudes) cause most quantization error. Scale them before quantizing — no Hessian needed, runs in minutes.
+
+---
+
 ## Navigation
 
 | # | Category | Topics | Papers |
@@ -108,128 +212,6 @@ Core concepts that appear across all papers in this repo.
 |---|-------|-------|----------|------|
 | 1 | [GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers](papers/compression/gptq.md) | ICLR '23 | Layer-wise INT4 quantization using second-order information; near-lossless at 4-bit | ✅ |
 | 2 | [AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration](papers/compression/awq.md) | MLSys '24 | Protect salient weights (by activation magnitude) during INT4 quantization | ✅ |
-
----
-
-## How to Use This Repo
-
-Each paper note follows a consistent structure (see [Template](papers/TEMPLATE.md)):
-
-1. **TL;DR** — one paragraph summary of the key contribution
-2. **Problem** — what gap does this paper address
-3. **Key Ideas** — core technical decisions, with diagrams where helpful
-4. **System Tradeoffs** — what the design optimizes for, and at what cost
-5. **Connections** — how this relates to other papers or production systems
-6. **Questions** — open questions and things to dig deeper on
-
----
-
-## Reading Roadmap
-
-If you're coming from backend/distributed systems, follow this path. Each paper builds on the previous — jumping ahead without the prerequisites means missing the "why."
-
-### Quick Reference — Flat Sequence
-
-| # | Paper | Why this order |
-|---|-------|---------------|
-| 1 | Attention Is All You Need | Defines KV cache, MHA, and the decode loop — the vocabulary for everything else |
-| 2 | GQA | Modern production models all use GQA; you need this to reason about KV cache sizing |
-| 3 | FlashAttention | Teaches GPU memory hierarchy (HBM vs SRAM); prerequisite for understanding any serving bottleneck |
-| 4 | ORCA | First principles of serving: iteration-level scheduling, the reactor pattern for GPUs |
-| 5 | vLLM / PagedAttention | Fixes KV cache fragmentation with virtual memory; builds directly on ORCA's scheduling model |
-| 6 | Speculative Decoding | A latency-only optimization; orthogonal to memory, easier to understand after vLLM |
-| 7 | Splitwise | Cluster-level CQRS: only makes sense once you understand prefill vs decode resource profiles |
-| 8 | ZeRO | Training track starts here: memory is the binding constraint; partition it first |
-| 9 | Megatron-LM | Model parallelism strategies (TP/PP/DP); builds on ZeRO's memory intuition |
-| 10 | MegaScale | What ZeRO + Megatron look like at 10K GPUs in production; engineering > algorithms |
-| 11 | Sarathi-Serve | Scheduling refinement: chunked prefill prevents head-of-line blocking; needs ORCA + vLLM first |
-| 12 | Vidur | Simulation framework; only useful if you understand what it's simulating (papers 4–7) |
-| 13 | GPTQ | Post-training quantization; independent thread, but easier after you understand serving memory pressure |
-| 14 | AWQ | Refines GPTQ by protecting salient weights; read GPTQ first |
-
----
-
-### Detailed Roadmap
-
-```
-Phase 1 — Foundations (papers 1–3)
-│  Goal: understand the KV cache, attention variants, and GPU memory hierarchy.
-│  Without these, serving paper motivations are opaque.
-│
-├── 1. Attention Is All You Need
-│      Defines the Transformer, the KV cache, and the autoregressive decode loop.
-│      Everything downstream is an optimization of this baseline.
-│
-├── 2. GQA
-│      LLaMA 3, Mistral, Gemma all use GQA instead of MHA.
-│      Read before vLLM so you understand what's being cached and at what size.
-│
-└── 3. FlashAttention
-       HBM is slow; SRAM is fast; tile the attention computation to stay in SRAM.
-       After this, "memory-bandwidth bound" has a concrete meaning.
-
-Phase 2 — Inference Systems (papers 4–7)
-│  Goal: understand how a production serving system works end-to-end.
-│  Read in strict order — each paper patches a bottleneck exposed by the previous.
-│
-├── 4. ORCA
-│      Iteration-level scheduling: don't wait for a full batch to finish.
-│      Establishes continuous batching as the foundational serving primitive.
-│
-├── 5. vLLM / PagedAttention
-│      KV cache fragmentation wastes 60–80% of GPU memory in ORCA's world.
-│      Fixed-size blocks + a page table eliminate waste and enable prefix sharing.
-│
-├── 6. Speculative Decoding
-│      Draft model generates k candidate tokens; target model verifies all k in one pass.
-│      Pure latency win; output distribution is mathematically identical to the target alone.
-│
-└── 7. Splitwise
-       Prefill is compute-bound; decode is memory-bandwidth-bound.
-       Route them to separate hardware pools sized for each workload.
-
-Phase 3 — Distributed Training (papers 8–10)
-│  Goal: understand how to train models that don't fit on one GPU or one node.
-│  Independent of Phase 2 — can be read in parallel if preferred.
-│
-├── 8. ZeRO
-│      Optimizer states are 12× the parameter size at fp16 + Adam.
-│      Partition them across GPUs — each rank owns 1/N, gathers on demand.
-│
-├── 9. Megatron-LM
-│      3D parallelism: tensor parallel (within node), pipeline parallel (across nodes),
-│      data parallel (replicas). The canonical mental model for large-scale training.
-│      Read ZeRO first — it explains why naive data-parallel alone fails.
-│
-└── 10. MegaScale
-        Applies Megatron + ZeRO at 12K GPUs in production at ByteDance.
-        The paper is about fault tolerance, straggler mitigation, and operational
-        visibility — engineering problems that only appear at this scale.
-
-Phase 4 — Scheduling & SLOs (papers 11–12, after Phase 2)
-│  Goal: meet latency SLOs while maximizing GPU utilization.
-│  Requires Phase 2 as background.
-│
-├── 11. Sarathi-Serve
-│       A long prefill monopolizes the GPU for hundreds of ms, blocking all decode tokens.
-│       Chunked prefill + piggybacking ensures decodes proceed every iteration.
-│
-└── 12. Vidur
-        Calibrated discrete-event simulator for LLM serving.
-        Answers "how many GPUs do I need for X RPS at P99 < Y ms?" without real hardware.
-
-Phase 5 — Memory & Compression (papers 13–14, can read any time after Phase 1)
-│  Goal: fit larger models into the same hardware budget.
-│  Independent track — GPU memory pressure is the forcing function.
-│
-├── 13. GPTQ
-│       Layer-wise INT4 quantization using second-order (Hessian) information.
-│       Near-lossless quality; the principled baseline for post-training quantization.
-│
-└── 14. AWQ
-        1% of weight channels (those with large activation magnitudes) cause most
-        quantization error. Scale them before quantizing — no Hessian needed, runs in minutes.
-```
 
 ---
 
