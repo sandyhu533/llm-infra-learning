@@ -13,17 +13,6 @@ In continuous batching systems like vLLM, long prefill requests monopolize the G
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Long prefill blocking decode | Head-of-line blocking in TCP / HTTP/1.1 | One large request holds the pipe; others stall waiting |
-| Chunked prefill | HTTP/2 stream multiplexing / request slicing | Break large unit of work into small slices; interleave with other streams |
-| Decode piggybacking | Cooperative multitasking with time slices | Give every runnable task a slice every scheduling round |
-| Prefill chunk size | Scheduling quantum (OS time-slice length) | Too small = overhead dominates; too large = blocking returns |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
@@ -145,8 +134,6 @@ The chunk size C becomes the primary knob to trade TTFT vs TPOT.
 
 ## Reading Notes
 
-The head-of-line blocking insight is directly from TCP/HTTP — the same problem web infrastructure solved with HTTP/2 multiplexing. It's surprising it took this long for the LLM serving community to apply it.
+The core problem — one large job monopolizing the queue and blocking all smaller ones — is well-known in scheduling literature, and chunking is the standard fix. What makes this non-trivial in LLM serving is the attention kernel: you need one kernel call that handles prefill tokens (QKV self-attention within the chunk) and decode tokens (single-token attention over full KV cache) simultaneously. This is essentially what FlashAttention's variable-length kernel does — Sarathi-Serve extends it to the mixed-batch case.
 
-The key implementation challenge is the mixed attention kernel: you need one kernel call that handles prefill (QKV self-attention within chunk) and decode (single-token attention over full KV cache) simultaneously. This is essentially what FlashAttention's variable-length kernel does — Sarathi-Serve extends it to the mixed-batch case.
-
-From an SRE perspective: the chunk size C is a latency knob analogous to a TCP socket buffer size — tuning it per deployment based on observed TTFT/TPOT SLO targets is the right production approach.
+The chunk size C is the primary production tuning knob: larger C means fewer iterations to complete a prefill (lower TTFT) but worse decode interference; smaller C means smoother decode latency (lower TPOT P99) but more iterations per prefill. Tune it based on observed TTFT/TPOT SLO targets for your workload.

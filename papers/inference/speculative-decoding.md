@@ -13,19 +13,6 @@ Autoregressive LLM decoding generates one token per forward pass — the GPU run
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Draft model (small, fast) | Branch predictor / speculative execution (OOO processor) | Cheap fast unit generates a prediction; expensive unit verifies in bulk |
-| Target model verification | Retirement / commit stage | Check all speculative results at once; roll back on misprediction |
-| Acceptance rate | Branch prediction accuracy | High acceptance rate → big speedup; low rate → overhead dominates |
-| Batch verification pass | Prefetching + bulk validation | Issue all speculative tokens to the model in one batched forward pass |
-| Rejection sampling | CRC / checksum verification | Mathematically guaranteed to produce correct results (same distribution), not just approximate |
-| k (speculation length) | Instruction window size | Too small = under-utilizes verification parallelism; too large = high rollback cost |
-
----
-
 ## Problem
 
 **What gap does this paper address?**

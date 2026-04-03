@@ -13,22 +13,6 @@ Standard attention is slow not because of FLOPs, but because of memory bandwidth
 
 ---
 
-## Infra Analogy
-
-> For engineers coming from distributed systems / OS / backend infra:
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| HBM (GPU DRAM) reads | Disk I/O / DRAM access | Slow, high-latency, bandwidth-limited — the bottleneck |
-| SRAM (on-chip shared memory) | L1/L2 CPU cache | Fast, small, explicit management needed |
-| Tiled attention computation | Cache-oblivious / blocked matrix multiply | Restructure access pattern so working set fits in fast cache; avoid round-trips to slow memory |
-| Recomputing softmax in backward | Log-structured / write-ahead patterns | Trade compute for storage: recompute cheaply rather than persist large intermediates |
-| IO-awareness | Storage-aware query planning (e.g., index scan vs seq scan) | Optimize for memory access pattern, not just FLOP count |
-
-The insight is the same as blocked matrix multiply in HPC: the algorithm is mathematically equivalent, but accessing data in cache-friendly tiles instead of row-by-row drops memory traffic dramatically.
-
----
-
 ## Problem
 
 **What gap does this paper address?**

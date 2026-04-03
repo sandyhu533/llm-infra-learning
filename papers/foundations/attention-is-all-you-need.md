@@ -13,19 +13,6 @@ Before 2017, sequence modeling relied on RNNs and LSTMs — inherently sequentia
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Self-attention (all-to-all token interaction) | Full-mesh network topology | Every node can directly communicate with every other node in one hop; contrast with RNN's linked-list |
-| Multi-head attention | RAID striping / parallel query execution | Run multiple attention "heads" in parallel, each capturing different relationship types |
-| KV cache (K and V matrices cached at decode time) | Read-through cache for database rows | Computed once during prefill, reused for every decode step — the direct origin of the KV cache in serving systems |
-| Positional encoding | Sequence numbers / timestamps | Attention is order-invariant; positional encoding injects token position information explicitly |
-| Transformer layer (attention + FFN) | Pipeline stage | A self-contained compute unit; stack N of them for depth; the natural unit for pipeline parallelism |
-| Encoder-decoder vs decoder-only | Request-response vs streaming | Encoder-decoder: full input before output; decoder-only (GPT): generate token-by-token from the start |
-
----
-
 ## Problem
 
 **What gap does this paper address?**

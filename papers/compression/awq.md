@@ -13,18 +13,6 @@ GPTQ minimizes per-layer quantization error but treats all weights symmetrically
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Salient weights (1% of channels) | Hot paths in a profiler (80/20 rule) | 1% of code/weights causes 80–99% of the quality loss; optimize the hot path |
-| Per-channel activation scaling | Adaptive precision in floating-point (exponent bias) | Shift the numeric range where it matters most before quantizing to fixed-point |
-| Hardware-friendly pure INT4 | Uniform data encoding for SIMD efficiency | Mixed-precision (some FP16, some INT4) breaks vectorized kernel execution; uniform INT4 is faster |
-| Grid search over scaling factors | Auto-tuning (e.g., TVM, Halide schedule search) | Search over a small parameter space (per-channel scales) to minimize a loss metric |
-| Calibration-based optimization | SLA-based traffic shaping | Use observed statistics (activation magnitude distribution) to inform static decisions |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
@@ -159,8 +147,8 @@ This is a simple 1D grid search per channel (not gradient-based, not Hessian-bas
 
 ## Reading Notes
 
-The core insight — "identify the 1% of weights that matter via activation statistics, then scale before quantizing" — is elegant in its simplicity. It avoids the O(d³) Hessian computation of GPTQ while achieving similar or better results by attacking the root cause rather than compensating after the fact.
+The core insight — identify the 1% of weight channels that matter most (via activation magnitude), then scale them before quantizing rather than compensating afterward — is more elegant than GPTQ's approach. GPTQ measures and corrects error layer by layer using the Hessian; AWQ asks why certain weights are hard to quantize in the first place, finds the structural answer (large input activations amplify rounding error), and fixes the root cause.
 
-This is a recurring pattern in systems optimization: profile to find the hot path, optimize the hot path specifically. The same logic applies to database index selection, JIT compilation hot loops, and network traffic shaping. AWQ applies it to weight quantization.
+The result is a method that runs in minutes instead of hours and produces pure INT4 output with no mixed-precision fallback — which is what hardware kernels need for full vectorized throughput.
 
-For infrastructure engineers: AWQ is the right choice when deployment targets edge devices or when you need fast quantization turnaround (minutes vs hours). For maximum accuracy on datacenter GPUs, GPTQ's Hessian compensation can still win on some benchmarks. In practice, run both and pick based on your quality/latency budget.
+In practice: AWQ is the right default for edge deployment and fast turnaround. GPTQ's Hessian compensation can win on some benchmarks for datacenter serving. Run both and pick based on your accuracy and latency budget.

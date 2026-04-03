@@ -13,23 +13,6 @@ Training large models hits a GPU memory wall long before hitting a compute wall.
 
 ---
 
-## Infra Analogy
-
-> For engineers coming from distributed systems / OS / backend infra:
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Data parallelism memory redundancy | Full replica set — every node stores the full dataset | Each replica holds a complete copy; writes must be consistent across all |
-| ZeRO partitioning | Consistent hash ring / shard-everything | Instead of replication, partition the state space; each node owns a slice |
-| All-gather before forward pass | Scatter-gather in distributed filesystems | Assemble the full view from shards on demand |
-| Reduce-scatter after backward | Partial aggregation in MapReduce | Each worker computes its local gradient contribution; reduce and shard the result |
-| Optimizer state partitioning (Stage 1) | Partitioned write-ahead log | Each node only needs to maintain WAL for its own shard of state |
-| CPU offload variant (ZeRO-Infinity) | Tiered storage / memory-mapped files | Spill to slower but larger storage (CPU RAM, NVMe) when GPU memory is full |
-
-The core insight: data parallelism creates K replicas of everything (K = number of GPUs). ZeRO asks — do we actually need K copies of the optimizer state? No. Each GPU only needs to update 1/K of the parameters. Gather what you need; own only your slice.
-
----
-
 ## Problem
 
 **What gap does this paper address?**

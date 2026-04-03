@@ -13,19 +13,6 @@ Multi-head attention (MHA) gives every attention head its own K and V projection
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| MHA: one K/V per query head | Separate read replica per client | Every client gets its own data copy; maximum quality, maximum memory |
-| MQA: one K/V for all heads | Single shared read replica (MySQL read replica) | All clients share one replica; minimum memory, possible degradation under high contention |
-| GQA: one K/V per group of heads | Read replica per shard / region | Groups of clients share a replica; balanced memory vs quality tradeoff |
-| KV cache per head | Per-replica buffer pool | Each replica (K/V head) has its own in-memory cache; proportional to number of replicas |
-| Uptraining MHA → GQA | Online schema migration | Convert existing data (checkpoint) to new format with minimal reprocessing |
-| G (number of groups) | Replication factor | Tunable: more groups = more memory, higher quality; fewer groups = less memory, lower quality |
-
----
-
 ## Problem
 
 **What gap does this paper address?**

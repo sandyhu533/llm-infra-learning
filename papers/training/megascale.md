@@ -13,25 +13,6 @@ Academic papers on distributed training show what's theoretically possible. Mega
 
 ---
 
-## Infra Analogy
-
-> For engineers coming from distributed systems / OS / backend infra:
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| MFU (Model FLOP Utilization) | CPU utilization / IPC efficiency | How much of peak theoretical throughput you're actually using |
-| Stragglers in pipeline parallelism | Tail latency in distributed systems | One slow node sets the pace for the whole pipeline; P99 matters |
-| In-flight checkpoint | Write-ahead log / incremental snapshot | Don't checkpoint synchronously; overlap with ongoing compute |
-| GPU failure mid-run | Node failure in long-running batch jobs | Need fast detection + recovery; state must be recoverable |
-| Network congestion causing training stalls | GC pauses / head-of-line blocking | Latency spikes in collective comm = training throughput collapses |
-| Operator fusion | Query compilation / predicate pushdown | Merge multiple small ops into one kernel to reduce kernel launch overhead |
-| Overlapping compute and communication | Async I/O / DMA transfers | Use CUDA streams to run NCCL collectives while GPU computes |
-| Hierarchical all-reduce (intra/inter node) | Hierarchical aggregation in distributed systems | Two-level reduce: faster NVLink within node, slower IB across nodes |
-
-The core lesson mirrors any large distributed system: at 10K nodes, everything fails constantly. The paper is fundamentally about **operational excellence** — the same problems a senior SRE faces at scale, just with GPUs instead of servers.
-
----
-
 ## Problem
 
 **What gap does this paper address?**

@@ -13,18 +13,6 @@ Capacity planning for LLM serving clusters is expensive: running real workloads 
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Vidur simulator | ns-3 / DES network simulator | Discrete-event simulation of packet scheduling; predict latency without running real traffic |
-| Iteration-level execution model | CPU cycle-accurate simulator | Model each compute "tick" precisely enough to predict real execution time |
-| Scheduling policy evaluation | Queuing theory / Little's Law simulation | Evaluate different dispatch algorithms before production rollout |
-| Capacity planning via simulation | Traffic modeling + load testing | Answer "how many GPUs do I need for X RPS at P99 < Y ms?" without provisioning the cluster |
-| Workload trace replay | tcpreplay / load generator | Replay historical request traces to benchmark a new scheduler or hardware config |
-
----
-
 ## Problem
 
 **What gap does this paper address?**

@@ -13,18 +13,6 @@ Running a 175B-parameter LLM requires ~350GB of GPU memory in FP16 — far excee
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| INT4 weight quantization | Lossy compression (JPEG, MP3) | Trade some precision for 4x size reduction; quality loss is bounded and acceptable for most use cases |
-| Layer-wise quantization | Incremental database migration | Process one table (layer) at a time; don't need to rewrite the whole system |
-| Hessian-guided error correction | Error-correcting codes / adaptive compression | Use statistical structure of the data to minimize information loss |
-| Calibration dataset | Representative query set for query plan optimization | A small but representative sample is enough to estimate the cost landscape |
-| Weight-only quantization | Read-only replica compression | Compress the static data (weights); keep the dynamic data (activations) at full precision |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
