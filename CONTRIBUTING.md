@@ -74,6 +74,61 @@ Before submitting, check:
 
 ---
 
+## How to Add a Code Note
+
+### 1. Check scope first
+
+A framework qualifies if:
+- It's a **production open-source** codebase (not a research prototype)
+- It has a **direct anchor in an existing paper note** in this repo — the code note should deepen understanding of that paper, not introduce a new concept
+- The concept it covers is **not already covered** by another framework note — if two frameworks implement the same idea (e.g., FSDP and DeepSpeed both implement ZeRO Stage 3), pick one
+
+### 2. Create the file
+
+```bash
+# inference frameworks
+touch code/inference/<framework-name>.md
+
+# training frameworks
+touch code/training/<framework-name>.md
+```
+
+### 3. Fill in all sections
+
+Every section in the [note template](code/README.md#note-structure) is required:
+
+**Entry Point** — one file and one function. If you can't identify a single entry point, the scope is too broad; narrow it.
+
+**Key Files** — 4–6 files maximum. For each file:
+- Name the specific class or function to read, not just the file
+- Explain what data enters and exits the module
+- Include a "Key insight" line connecting the code to the paper — don't just describe what the code does
+
+**Step Walkthrough** — trace one complete request (inference) or one complete training step (training) through the key files in sequence. Use the pseudocode block style from existing notes. The goal is to show how modules connect at runtime, not to reproduce the code.
+
+**Paper → Code Mapping** — at least 4 rows. Each row maps a named concept from the paper note to a specific file + class/function. Vague entries like "ZeRO partitioning → stage3.py" don't count — be specific: "Stage 3: all-gather before layer forward → `_fetch_sub_module()` via pre-forward hook in `stage3.py`".
+
+**What the Paper Doesn't Tell You** — at least 3 entries. These must be things that are only visible in the code: config knobs, performance tradeoffs, correctness gotchas, implementation constraints the paper glosses over. Do not repeat anything already stated in the paper note.
+
+### 4. Update README entries
+
+Add a row to the table in `code/README.md` and add/update the framework row in the root `README.md` Source Code Reading table.
+
+---
+
+## Code Note Quality Bar
+
+Before submitting, check:
+
+- [ ] Entry Point is a single file + function, not a directory
+- [ ] Key Files section has 4–6 files (no more), each with a named class/function and a "Key insight" line
+- [ ] Step Walkthrough traces one complete step end-to-end using pseudocode
+- [ ] Paper → Code Mapping has at least 4 rows with specific file + function references
+- [ ] "What the Paper Doesn't Tell You" has at least 3 entries not present in the paper note
+- [ ] No key file entry just describes what the code does without connecting it back to a paper concept
+
+---
+
 ## What Not to Include
 
 - Do not copy-paste from the paper abstract. Rephrase in your own words.
