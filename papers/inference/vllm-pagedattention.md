@@ -128,4 +128,4 @@ The scheduler uses a First-Come-First-Served policy with preemption to maximize 
 
 The core insight — "KV cache is like process memory, apply OS paging" — feels obvious in hindsight but wasn't for the ML systems community, which had been thinking about this as an ML problem rather than a systems problem.
 
-The block table lookup adds memory indirection. In our graph system, we found similar overhead from non-local cache lookups — the solution was co-scheduling tasks with similar subgraphs to the same worker. For vLLM, prefix caching (SGLang's RadixAttention) is the analogous optimization.
+The block table lookup adds memory indirection. The natural follow-on optimization is prefix caching (SGLang's RadixAttention): co-scheduling requests with shared prefixes to the same worker eliminates redundant lookups.

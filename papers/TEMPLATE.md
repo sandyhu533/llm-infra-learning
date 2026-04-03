@@ -81,9 +81,6 @@ Description.
 **Production systems using these ideas:**
 - System X at Company Y
 
-**Compared to my own work:**
-- Similarity/difference with [your relevant project]
-
 ---
 
 ## Key Numbers
