@@ -10,22 +10,27 @@ A curated collection of paper notes and insights on **LLM Infrastructure** — c
 
 Each paper builds on the previous — jumping ahead without the prerequisites means missing the "why."
 
-| # | Paper | Why this order |
-|---|-------|---------------|
-| 1 | [Attention Is All You Need](papers/foundations/attention-is-all-you-need.md) | Defines KV cache, MHA, and the decode loop — the vocabulary for everything else |
-| 2 | [GQA](papers/foundations/gqa.md) | Modern production models all use GQA; you need this to reason about KV cache sizing |
-| 3 | [FlashAttention](papers/foundations/flash-attention.md) | Teaches GPU memory hierarchy (HBM vs SRAM); prerequisite for understanding any serving bottleneck |
-| 4 | [ORCA](papers/inference/orca-continuous-batching.md) | First principles of serving: iteration-level scheduling, the reactor pattern for GPUs |
-| 5 | [vLLM / PagedAttention](papers/inference/vllm-pagedattention.md) | Fixes KV cache fragmentation with virtual memory; builds directly on ORCA's scheduling model |
-| 6 | [Speculative Decoding](papers/inference/speculative-decoding.md) | A latency-only optimization; orthogonal to memory, easier to understand after vLLM |
-| 7 | [Splitwise](papers/inference/splitwise-pd-disaggregation.md) | Cluster-level CQRS: only makes sense once you understand prefill vs decode resource profiles |
-| 8 | [ZeRO](papers/training/zero-memory-optimization.md) | Training track starts here: memory is the binding constraint; partition it first |
-| 9 | [Megatron-LM](papers/training/megatron-lm.md) | Model parallelism strategies (TP/PP/DP); builds on ZeRO's memory intuition |
-| 10 | [MegaScale](papers/training/megascale.md) | What ZeRO + Megatron look like at 10K GPUs in production; engineering > algorithms |
-| 11 | [Sarathi-Serve](papers/scheduling/sarathi-serve.md) | Scheduling refinement: chunked prefill prevents head-of-line blocking; needs ORCA + vLLM first |
-| 12 | [Vidur](papers/scheduling/vidur.md) | Simulation framework; only useful if you understand what it's simulating (papers 4–7) |
-| 13 | [GPTQ](papers/compression/gptq.md) | Post-training quantization; independent thread, but easier after you understand serving memory pressure |
-| 14 | [AWQ](papers/compression/awq.md) | Refines GPTQ by protecting salient weights; read GPTQ first |
+Priority levels:
+- **★★★ Core** — foundational vocabulary; every other paper assumes this knowledge
+- **★★☆ Important** — essential for understanding system design at depth; read in full
+- **★☆☆ Selective** — read the conclusion and key numbers; go deep only if directly relevant to your work
+
+| # | Paper | Priority | Why this order |
+|---|-------|----------|---------------|
+| 1 | [Attention Is All You Need](papers/foundations/attention-is-all-you-need.md) | ★★★ Core | Defines KV cache, MHA, and the decode loop — the vocabulary for everything else |
+| 2 | [GQA](papers/foundations/gqa.md) | ★★★ Core | Modern production models all use GQA; you need this to reason about KV cache sizing |
+| 3 | [FlashAttention](papers/foundations/flash-attention.md) | ★★★ Core | Teaches GPU memory hierarchy (HBM vs SRAM); prerequisite for understanding any serving bottleneck |
+| 4 | [ORCA](papers/inference/orca-continuous-batching.md) | ★★★ Core | First principles of serving: iteration-level scheduling, the reactor pattern for GPUs |
+| 5 | [vLLM / PagedAttention](papers/inference/vllm-pagedattention.md) | ★★★ Core | Fixes KV cache fragmentation with virtual memory; builds directly on ORCA's scheduling model |
+| 6 | [Speculative Decoding](papers/inference/speculative-decoding.md) | ★★☆ Important | A latency-only optimization; orthogonal to memory, easier to understand after vLLM |
+| 7 | [Splitwise](papers/inference/splitwise-pd-disaggregation.md) | ★★☆ Important | Cluster-level CQRS: only makes sense once you understand prefill vs decode resource profiles |
+| 8 | [ZeRO](papers/training/zero-memory-optimization.md) | ★★★ Core | Training track starts here: memory is the binding constraint; partition it first |
+| 9 | [Megatron-LM](papers/training/megatron-lm.md) | ★★★ Core | Model parallelism strategies (TP/PP/DP); builds on ZeRO's memory intuition |
+| 10 | [MegaScale](papers/training/megascale.md) | ★★☆ Important | What ZeRO + Megatron look like at 10K GPUs in production; engineering > algorithms |
+| 11 | [Sarathi-Serve](papers/scheduling/sarathi-serve.md) | ★★☆ Important | Scheduling refinement: chunked prefill prevents head-of-line blocking; needs ORCA + vLLM first |
+| 12 | [Vidur](papers/scheduling/vidur.md) | ★☆☆ Selective | Simulation framework; useful if you do capacity planning, otherwise skim the key ideas |
+| 13 | [GPTQ](papers/compression/gptq.md) | ★☆☆ Selective | Understand the conclusion (Hessian-guided INT4); go deep only if you own a quantization pipeline |
+| 14 | [AWQ](papers/compression/awq.md) | ★★☆ Important | Core insight (1% salient channels) is worth understanding; more elegant and practical than GPTQ |
 
 ---
 
@@ -33,11 +38,13 @@ Each paper builds on the previous — jumping ahead without the prerequisites me
 
 Paper notes explain what and why. The [code/](code/README.md) section covers how — tracing key frameworks from entry point to kernel call.
 
-| Framework | Learning Goal | Read After |
-|-----------|--------------|------------|
-| [vLLM](code/inference/vllm.md) | Continuous batching + paged KV cache in production code | ORCA + vLLM papers |
-| [DeepSpeed ZeRO](code/training/deepspeed-zero.md) | Stage 2/3 optimizer: reduce-scatter, all-gather, param fetch/release | ZeRO paper |
-| [Megatron-LM](code/training/megatron-lm.md) | ColumnParallelLinear, RowParallelLinear, and 1F1B pipeline schedule | Megatron-LM paper |
+Priority follows the same logic: Core if the framework is part of your daily stack, Selective if it's background knowledge.
+
+| Framework | Priority | Learning Goal | Read After |
+|-----------|----------|--------------|------------|
+| [vLLM](code/inference/vllm.md) | ★★★ Core | Continuous batching + paged KV cache in production code | ORCA + vLLM papers |
+| [Megatron-LM](code/training/megatron-lm.md) | ★★☆ Important | ColumnParallelLinear, RowParallelLinear, and 1F1B pipeline schedule | Megatron-LM paper |
+| [DeepSpeed ZeRO](code/training/deepspeed-zero.md) | ★★☆ Important | Stage 2/3 optimizer: reduce-scatter, all-gather, param fetch/release | ZeRO paper |
 
 ---
 
