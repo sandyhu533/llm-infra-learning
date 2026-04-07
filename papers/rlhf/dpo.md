@@ -13,18 +13,6 @@ DPO eliminates the reward model and PPO loop from RLHF entirely. It shows that t
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| DPO replacing PPO | Monolith replacing microservices | Trading the flexibility of 4 separate models for operational simplicity of 2 |
-| Implicit reward (via log-prob difference) | Derived metric vs explicit measurement | Instead of measuring reward directly (RM), derive it from observable quantities (log-probs) |
-| Reference model | Read replica / frozen snapshot | A fixed checkpoint used only for reads; never updated, can be in inference mode or offloaded |
-| Offline preference dataset | Static training corpus | No online data generation needed; train on a fixed dataset of (prompt, chosen, rejected) |
-| Contrastive loss on pairs | Siamese network / pairwise ranking | Compare two outputs relative to each other rather than scoring them absolutely |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
@@ -168,5 +156,6 @@ PPO loop per step:                     logp_w = policy(y_w|x)
 
 - DPO's main contribution is a mathematical insight, not a systems innovation. But the infra consequences are profound: it made RLHF accessible to anyone who can run supervised fine-tuning.
 - The "Your Language Model is Secretly a Reward Model" subtitle is the key intuition: if you have a policy and a reference model, the log-prob ratio *is* the reward. You never needed a separate reward model.
+- The shift from PPO to DPO mirrors the monolith-vs-microservices tradeoff: PPO's 4-model architecture is flexible but operationally complex; DPO collapses it into a simpler system at the cost of losing online exploration. The reference model acts like a read replica — a frozen snapshot used only for inference, never updated.
 - In practice, DPO's simplicity made it the default alignment method for the open-source community (Llama 2, Zephyr, etc.). PPO remained dominant at labs with more compute (OpenAI, Anthropic) because online exploration matters for frontier models.
 - The tension between DPO (offline, simple) and PPO/GRPO (online, complex) is the central divide in alignment infrastructure. Understanding both sides is essential.

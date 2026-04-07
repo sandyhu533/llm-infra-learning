@@ -45,11 +45,10 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full scope criteria and how to
 Each paper note follows this template:
 
 1. **TL;DR** — one paragraph readable in 60 seconds
-2. **Infra Analogy** — map paper concepts to distributed systems / OS / backend equivalents
-3. **Problem** — what was broken before this paper, and why naive solutions fail
-4. **Key Ideas** — core technical decisions with data flow diagrams where helpful
-5. **System Tradeoffs** — what the design optimizes for, at what explicit cost
-6. **Connections** — what this builds on and what it enabled
-7. **Key Numbers** — benchmark figures from the paper
-8. **Questions & Open Problems** — non-trivial open questions
-9. **Reading Notes** — personal observations
+2. **Problem** — what was broken before this paper, and why naive solutions fail
+3. **Key Ideas** — core technical decisions with data flow diagrams where helpful
+4. **System Tradeoffs** — what the design optimizes for, at what explicit cost
+5. **Connections** — what this builds on and what it enabled
+6. **Key Numbers** — benchmark figures from the paper
+7. **Questions & Open Problems** — non-trivial open questions
+8. **Reading Notes** — personal observations; include infra analogies here where they naturally fit

@@ -34,11 +34,11 @@ Create a new category directory if the paper doesn't fit existing ones.
 
 ### 2. Fill in all sections
 
-Every section in [papers/TEMPLATE.md](papers/TEMPLATE.md) is required. The two most important:
-
-**Infra Analogy** — Map each key concept to a traditional infra analog (OS, distributed systems, databases, storage). Be specific: don't say "like caching" — say "like InnoDB buffer pool, because both cache hot working-set data near compute and evict under memory pressure." If you can't find an analogy, describe what makes the concept genuinely novel.
+Every section in [papers/TEMPLATE.md](papers/TEMPLATE.md) is required. The most important:
 
 **System Tradeoffs** — What does the design optimize for, at what explicit cost? The "Design decisions worth questioning" subsection should include real critiques, not a summary of what the paper says about itself.
+
+**Reading Notes** — Where infra analogies naturally fit, include them here. Be specific: don't say "like caching" — say "like InnoDB buffer pool, because both cache hot working-set data near compute and evict under memory pressure." Don't force analogies where they don't add insight.
 
 ### 3. Update the reading roadmap
 
@@ -46,7 +46,6 @@ Add a row to the sequence table in [papers/README.md](papers/README.md) and the 
 
 ### 4. Quality checklist
 
-- [ ] Infra Analogy has at least 2 specific mappings (not vague — name the exact system and the shared mechanism)
 - [ ] TL;DR is one paragraph readable in 60 seconds
 - [ ] System Tradeoffs includes at least one genuine critique
 - [ ] Key Numbers is populated with actual benchmark figures from the paper

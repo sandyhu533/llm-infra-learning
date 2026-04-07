@@ -13,17 +13,6 @@
 
 ---
 
-## Infra Analogy
-
-> For engineers coming from distributed systems / OS / backend infra — what does this map to in your existing mental model?
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| e.g., KV cache | Buffer pool (InnoDB / PostgreSQL shared_buffers) | Both cache hot working-set data close to compute to avoid re-reading from slow storage |
-| e.g., continuous batching | Event-driven I/O (epoll / reactor pattern) | Both multiplex many in-flight requests over a shared resource instead of one-request-one-thread |
-
----
-
 ## Problem
 
 **What gap does this paper address?**

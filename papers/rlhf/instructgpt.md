@@ -13,18 +13,6 @@ InstructGPT defines the canonical three-stage pipeline for aligning language mod
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| 3-stage RLHF pipeline (SFT → RM → PPO) | ETL pipeline (Extract → Transform → Load) | Both are multi-stage data processing pipelines where each stage produces artifacts consumed by the next |
-| KL penalty against reference model | Rate limiter / circuit breaker | Prevents the policy from drifting too far too fast; bounds the update magnitude per iteration |
-| Reward model | Quality scoring service / anomaly detector | A stateless scorer invoked on every output; must be fast and reliable since it's in the hot path |
-| 4-model PPO setup | Microservice architecture with tight coupling | Four interdependent services (actor, critic, reward, ref) that must coordinate within each training step |
-| PPO rollout generation | Online feature computation | Generate fresh data each iteration rather than reading from a static dataset; the generation step dominates latency |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
@@ -159,4 +147,5 @@ Without KL penalty, the policy would exploit weaknesses in the reward model. The
 
 - The paper is more about the methodology and results than the systems engineering. The infra implications (4-model memory, generation bottleneck) are not discussed in the paper but are the dominant concern when implementing RLHF at scale.
 - The 1.3B InstructGPT beating 175B GPT-3 is the headline result, but the infra story is: how do you run PPO at 175B scale with 4 copies of the model? The answer at the time was: with great difficulty, and only OpenAI had the resources.
+- The 4-model PPO setup feels like a tightly-coupled microservice architecture — four interdependent components that must coordinate within each training step, with the generation step (rollout) acting like an online feature computation pipeline that dominates latency. The KL penalty plays the role of a rate limiter, bounding how fast the policy can drift from the reference.
 - This paper is the "why" for every subsequent RLHF simplification (DPO, GRPO). Understanding the 4-model PPO baseline is essential context for appreciating what those papers eliminate.

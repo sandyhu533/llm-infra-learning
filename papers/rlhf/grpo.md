@@ -13,18 +13,6 @@ GRPO (Group Relative Policy Optimization) eliminates the critic/value model from
 
 ---
 
-## Infra Analogy
-
-| LLM Concept | Traditional Infra Analogy | Why It Maps |
-|-------------|--------------------------|-------------|
-| Group sampling (G outputs per prompt) | A/B/n testing with multiple variants | Sample multiple candidates, compare them relatively rather than absolutely |
-| Group-relative advantage (z-score normalization) | Percentile ranking / z-score in metrics | Normalize within the group to remove absolute scale; only relative ordering matters |
-| No critic model | Eliminating a dependent microservice | One fewer model to train, deploy, and coordinate — reduces system complexity and memory |
-| Online generation during training | Online feature computation / real-time data pipeline | Fresh data generated each iteration; more expensive than offline but enables exploration |
-| G×batch_size total generations per step | Fan-out pattern | Each prompt fans out to G samples; total work = G × number of prompts |
-
----
-
 ## Problem
 
 **What gap does this paper address?**
@@ -166,5 +154,5 @@ No learned reward model needed. This further simplifies the system: the only neu
 
 - GRPO is conceptually simple: it's REINFORCE with a group-mean baseline. The innovation is recognizing that this is sufficient — you don't need a learned critic, and the variance from group statistics is manageable.
 - The 4 → 2 model progression (InstructGPT → DPO / GRPO) mirrors a common systems pattern: start with a general solution (PPO), identify which components are load-bearing, eliminate the rest.
-- The generation bottleneck (70-80% of training time) is the key systems insight. GRPO shifts the infra challenge from "how to fit 4 models in memory" to "how to generate 32K samples efficiently per step." This is why veRL integrates vLLM as a generation backend.
+- The generation step is a classic fan-out pattern: each prompt fans out to G=64 samples, creating a G× amplification in compute. This shifts the infra challenge from "how to fit 4 models in memory" to "how to generate 32K samples efficiently per step" — which is why veRL integrates vLLM as a generation backend.
 - DeepSeek-R1's success with GRPO at scale validated this approach as production-ready. The open-source release of DeepSeek-R1 weights made GRPO the most replicated alignment method in early 2025.
