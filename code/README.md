@@ -2,7 +2,7 @@
 
 Paper notes explain *what* systems do and *why*. Code reading shows *how* — the implementation decisions, performance knobs, and corner cases that papers skip.
 
-This section covers three frameworks, each anchored to papers in the reading roadmap.
+This section covers six frameworks, each anchored to papers in the reading roadmap.
 
 ---
 
@@ -16,14 +16,16 @@ Read the corresponding paper(s) first, then the code. Each framework picks up ex
 | 1   | [vLLM](inference/vllm.md)                    | Continuous batching + paged KV cache in production code       | ORCA + vLLM/PagedAttention papers |
 | 2   | [DeepSpeed ZeRO](training/deepspeed-zero.md) | How Stage 2/3 partition optimizer state and params at runtime | ZeRO paper                        |
 | 3   | [Megatron-LM](training/megatron-lm.md)       | How TP layers and the 1F1B pipeline schedule work in code     | Megatron-LM paper                 |
+| 4   | [SGLang](inference/sglang.md)                | RadixAttention prefix caching and cache-aware scheduling      | ORCA + vLLM/PagedAttention papers |
+| 5   | [TorchTitan](training/torchtitan.md)         | How PyTorch-native parallelism primitives compose into a modular training stack | ZeRO + Megatron-LM papers         |
+| 6   | [veRL](training/verl.md)                     | Multi-model RLHF orchestration, hybrid inference-training engine | InstructGPT + GRPO papers         |
 
 
 ---
 
 ## What's Not Included
 
-- **PyTorch FSDP** — implements ZeRO Stage 3 semantics, but DeepSpeed is the canonical reference for the ZeRO paper; reading both would duplicate the same concept
-- **SGLang** — worth following as a modern inference engine (RadixAttention, prefix caching), but limited paper anchors in this repo currently
+- **PyTorch FSDP (standalone)** — FSDP2 is covered as part of TorchTitan's composable parallelism stack; a standalone FSDP deep-dive would duplicate the same ZeRO-3 concepts
 - **TensorRT-LLM** — NVIDIA-specific; the concepts are covered by vLLM with a cleaner codebase
 - **FlashAttention CUDA kernels** — the paper itself is the better reference; reading raw CUDA/Triton for IO-aware tiling is below this repo's abstraction level
 

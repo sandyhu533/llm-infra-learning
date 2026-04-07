@@ -31,6 +31,9 @@ Priority levels:
 | 12 | [Vidur](papers/scheduling/vidur.md) | ★☆☆ Selective | Simulation framework; useful if you do capacity planning, otherwise skim the key ideas |
 | 13 | [GPTQ](papers/compression/gptq.md) | ★☆☆ Selective | Understand the conclusion (Hessian-guided INT4); go deep only if you own a quantization pipeline |
 | 14 | [AWQ](papers/compression/awq.md) | ★★☆ Important | Core insight (1% salient channels) is worth understanding; more elegant and practical than GPTQ |
+| 15 | [InstructGPT](papers/rlhf/instructgpt.md) | ★★★ Core | Defines the canonical RLHF pipeline (SFT → RM → PPO); the 4-model setup is the infra baseline |
+| 16 | [DPO](papers/rlhf/dpo.md) | ★★☆ Important | Eliminates reward model and PPO loop; reduces 4 models to 2 — a 2x memory simplification |
+| 17 | [GRPO](papers/rlhf/grpo.md) | ★★★ Core | Eliminates critic via group sampling; online RLHF with only 2 models — the approach behind DeepSeek-R1 |
 
 ---
 
@@ -45,6 +48,9 @@ Priority follows the same logic: Core if the framework is part of your daily sta
 | [vLLM](code/inference/vllm.md) | ★★★ Core | Continuous batching + paged KV cache in production code | ORCA + vLLM papers |
 | [Megatron-LM](code/training/megatron-lm.md) | ★★☆ Important | ColumnParallelLinear, RowParallelLinear, and 1F1B pipeline schedule | Megatron-LM paper |
 | [DeepSpeed ZeRO](code/training/deepspeed-zero.md) | ★★☆ Important | Stage 2/3 optimizer: reduce-scatter, all-gather, param fetch/release | ZeRO paper |
+| [SGLang](code/inference/sglang.md) | ★★☆ Important | RadixAttention prefix caching, cache-aware scheduling, FlashInfer integration | ORCA + vLLM papers |
+| [TorchTitan](code/training/torchtitan.md) | ★★☆ Important | PyTorch-native composable parallelism (FSDP2 + TP + PP) — the anti-Megatron | ZeRO + Megatron-LM papers |
+| [veRL](code/training/verl.md) | ★★★ Core | Multi-model RLHF orchestration, hybrid inference-training engine, GRPO implementation | InstructGPT + GRPO papers |
 
 ---
 
@@ -67,6 +73,11 @@ Priority follows the same logic: Core if the framework is part of your daily sta
 | **PD disaggregation** | Route prefill and decode to separate hardware pools sized for each workload. |
 | **PTQ** | Post-training quantization — compress weights to INT4/INT8 after training, without gradient updates. |
 | **HBM / SRAM** | GPU DRAM (large, slow, ~2–3 TB/s) vs. on-chip shared memory (small, fast, ~10–20 TB/s). |
+| **RLHF** | Reinforcement Learning from Human Feedback — fine-tuning with human preference data via a reward signal. |
+| **PPO** | Proximal Policy Optimization — classic RLHF algorithm requiring actor, critic, reward, and reference models. |
+| **DPO** | Direct Preference Optimization — eliminates reward model; optimizes preferences directly with 2 models. |
+| **GRPO** | Group Relative Policy Optimization — eliminates critic via group sampling; online RLHF with 2 models. |
+| **KL penalty** | Constrains the policy from diverging too far from the reference model; prevents reward hacking. |
 
 ---
 

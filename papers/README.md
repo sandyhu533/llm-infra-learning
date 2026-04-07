@@ -24,6 +24,9 @@ Read in sequence. Each paper builds on the previous — jumping ahead without th
 | 12 | [Vidur](scheduling/vidur.md) | Simulation framework; only useful if you understand what it's simulating (papers 4–7) |
 | 13 | [GPTQ](compression/gptq.md) | Post-training quantization; independent thread, but easier after you understand serving memory pressure |
 | 14 | [AWQ](compression/awq.md) | Refines GPTQ by protecting salient weights; read GPTQ first |
+| 15 | [InstructGPT](rlhf/instructgpt.md) | Defines the canonical 3-stage RLHF pipeline (SFT → RM → PPO); the 4-model infra baseline |
+| 16 | [DPO](rlhf/dpo.md) | Eliminates reward model and PPO; reduces to supervised-style training with 2 models |
+| 17 | [GRPO](rlhf/grpo.md) | Eliminates critic via group sampling; online RLHF with 2 models — powers DeepSeek-R1 |
 
 ---
 
