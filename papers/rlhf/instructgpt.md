@@ -78,7 +78,75 @@ for each batch of prompts:
 
 Step 1 (generation) dominates wall-clock time. Steps 2–5 are forward passes that can be batched. Step 7 is the only backward pass.
 
-### Idea 4: KL Penalty as Regularizer
+### Idea 4: RL Training ≠ New Training Paradigm — It's Still Backprop
+
+A common misconception: RL training uses some fundamentally different mechanism to update model weights. It doesn't. The entire training stack from gradient computation downward is identical to supervised fine-tuning. What changes is **where the loss comes from**.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    RLHF Training Stack                              │
+│                                                                     │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  Training Objective ("what to optimize")                      │  │
+│  │                                                               │  │
+│  │   SFT:  loss = CrossEntropy(model_output, ground_truth)       │  │
+│  │   PPO:  loss = f(reward, advantage, old_logprobs, new_logprobs)│ │
+│  │   GRPO: loss = f(group_reward, advantage, logprobs)           │  │
+│  │   DPO:  loss = BCE(chosen_logprob_margin, rejected_margin)    │  │
+│  └───────────────────────────┬───────────────────────────────────┘  │
+│                              │ produces scalar loss                 │
+│                              ▼                                      │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  Gradient Computation (identical for all methods)             │  │
+│  │                                                               │  │
+│  │   loss.backward()  →  ∂loss/∂θ for every parameter            │  │
+│  └───────────────────────────┬───────────────────────────────────┘  │
+│                              │ produces gradients                   │
+│                              ▼                                      │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │  Optimizer ("how to update parameters with gradients")        │  │
+│  │                                                               │  │
+│  │   Adam:  θ -= lr * m̂/(√v̂ + ε)     (momentum + adaptive LR)  │  │
+│  │   AdamW: Adam + decoupled weight decay                        │  │
+│  │   SGD:   θ -= lr * ∇loss           (vanilla gradient descent) │  │
+│  │                                                               │  │
+│  │   ← interchangeable; PPO doesn't care which one you use       │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+The key relationships:
+
+```
+Reward Model (RM)          ── "评判员" ── scores each generated output
+        │
+        ▼ scalar reward per sequence
+PPO / GRPO                 ── "训练算法" ── constructs the loss from rewards
+        │                     ├─ collects rollouts (generate responses)
+        │                     ├─ computes advantages (how good vs expected)
+        │                     ├─ builds clipped surrogate loss
+        │                     └─ adds KL penalty against reference
+        │
+        ▼ scalar loss
+loss.backward()            ── PyTorch autograd ── computes gradients
+        │
+        ▼ gradient tensor per parameter
+Adam / AdamW / SGD         ── "优化器" ── updates parameters using gradients
+        │
+        ▼ updated model weights
+```
+
+PPO is **not** a wrapper around Adam. They operate at different abstraction levels:
+
+| Layer | Responsibility | Examples | Swappable? |
+|-------|---------------|----------|------------|
+| **RL algorithm** | Construct loss from reward signal | PPO, GRPO, REINFORCE, A2C | Yes — pick one |
+| **Optimizer** | Update params given gradients | Adam, AdamW, SGD, LAMB | Yes — pick one |
+| **Distributed strategy** | Shard params/grads across GPUs | FSDP, ZeRO, DDP | Yes — pick one |
+
+In code, PPO calls `loss.backward()` and then `optimizer.step()` — the same two lines as any PyTorch training loop. The complexity is entirely in how `loss` is computed (from rewards, advantages, KL penalties) rather than how gradients flow.
+
+### Idea 5: KL Penalty as Regularizer
 
 The objective is: `maximize E[reward(x, y)] - β * KL(π || π_ref)`
 
