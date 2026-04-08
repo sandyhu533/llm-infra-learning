@@ -18,6 +18,7 @@ DPO eliminates the reward model and PPO loop from RLHF entirely. It shows that t
 **What gap does this paper address?**
 
 The standard RLHF pipeline ([InstructGPT](instructgpt.md)) requires:
+
 1. Training a separate reward model
 2. Running PPO with 4 models in memory (actor, critic, reward, reference)
 3. Online generation of rollouts during training
@@ -38,11 +39,13 @@ The naive alternative — just fine-tune on chosen responses and ignore rejected
 The standard RLHF objective is: `max_π E[r(x,y)] - β * KL(π || π_ref)`
 
 The optimal policy has the closed-form solution:
+
 ```
 π*(y|x) = (1/Z(x)) * π_ref(y|x) * exp(r(x,y) / β)
 ```
 
 Rearranging for the reward:
+
 ```
 r(x,y) = β * log(π(y|x) / π_ref(y|x)) + β * log(Z(x))
 ```
@@ -84,25 +87,29 @@ PPO loop per step:                     logp_w = policy(y_w|x)
 
 ### Idea 4: Memory and Compute Profile
 
-| Resource | PPO (InstructGPT) | DPO |
-|----------|-------------------|-----|
-| Models in memory | 4 (2 trainable + 2 frozen) | 2 (1 trainable + 1 frozen) |
-| Per-step forward passes | 4 (actor, critic, reward, ref) | 4 (policy×2 + ref×2, for chosen and rejected) |
-| Backward passes | 2 (actor + critic) | 1 (policy only) |
-| Online generation | Yes (bottleneck) | No |
-| Dataset | Prompts only (generate on-the-fly) | Fixed (prompt, chosen, rejected) triples |
-| RL hyperparameters | Many (clip, GAE λ, value coeff, etc.) | One (β) |
+
+| Resource                | PPO (InstructGPT)                     | DPO                                           |
+| ----------------------- | ------------------------------------- | --------------------------------------------- |
+| Models in memory        | 4 (2 trainable + 2 frozen)            | 2 (1 trainable + 1 frozen)                    |
+| Per-step forward passes | 4 (actor, critic, reward, ref)        | 4 (policy×2 + ref×2, for chosen and rejected) |
+| Backward passes         | 2 (actor + critic)                    | 1 (policy only)                               |
+| Online generation       | Yes (bottleneck)                      | No                                            |
+| Dataset                 | Prompts only (generate on-the-fly)    | Fixed (prompt, chosen, rejected) triples      |
+| RL hyperparameters      | Many (clip, GAE λ, value coeff, etc.) | One (β)                                       |
+
 
 ---
 
 ## System Tradeoffs
 
-| Optimizes For | At the Cost of |
-|---------------|----------------|
-| Memory efficiency (2× reduction) | No online exploration — can't improve beyond preference data distribution |
-| Training simplicity (SFT-like loop) | Offline — preference data quality is the ceiling |
-| Stability (no RL instabilities) | Less flexibility — can't incorporate arbitrary reward signals |
-| Compute efficiency (no generation step) | Requires pre-collected preference data with (chosen, rejected) pairs |
+
+| Optimizes For                           | At the Cost of                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| Memory efficiency (2× reduction)        | No online exploration — can't improve beyond preference data distribution |
+| Training simplicity (SFT-like loop)     | Offline — preference data quality is the ceiling                          |
+| Stability (no RL instabilities)         | Less flexibility — can't incorporate arbitrary reward signals             |
+| Compute efficiency (no generation step) | Requires pre-collected preference data with (chosen, rejected) pairs      |
+
 
 **Design decisions I'd question:**
 
@@ -115,16 +122,19 @@ PPO loop per step:                     logp_w = policy(y_w|x)
 ## Connections
 
 **Builds on:**
+
 - [InstructGPT](instructgpt.md) — the RLHF pipeline that DPO simplifies
 - Bradley-Terry model — the preference model underlying the reward formulation
 
 **Inspired / Followed by:**
+
 - IPO (Identity Preference Optimization) — further simplification
 - KTO (Kahneman-Tversky Optimization) — works with binary feedback instead of pairwise
 - [GRPO](grpo.md) — takes a different path: keeps online generation but removes the critic
 - ORPO, SimPO — other DPO variants with different loss formulations
 
 **Production systems using these ideas:**
+
 - Llama 2/3 (Meta) — used DPO in alignment pipeline
 - Zephyr (HuggingFace) — DPO-trained model
 - Most open-source alignment work uses DPO as the default method (simpler than PPO)
@@ -133,22 +143,24 @@ PPO loop per step:                     logp_w = policy(y_w|x)
 
 ## Key Numbers
 
-| Metric | Value | Context |
-|--------|-------|---------|
-| Win rate vs PPO (summarization) | ~60% | DPO matches or exceeds PPO on TL;DR summarization |
-| Win rate vs PPO (dialogue) | ~55% | Comparable on Anthropic HH dialogue task |
-| GPU memory reduction | ~2× | 2 models vs 4 models |
-| Training time reduction | ~3–5× | No generation step; the SFT-like loop is much faster per iteration |
-| Hyperparameters | 1 (β) | vs ~6+ for PPO |
+
+| Metric                          | Value | Context                                                            |
+| ------------------------------- | ----- | ------------------------------------------------------------------ |
+| Win rate vs PPO (summarization) | ~60%  | DPO matches or exceeds PPO on TL;DR summarization                  |
+| Win rate vs PPO (dialogue)      | ~55%  | Comparable on Anthropic HH dialogue task                           |
+| GPU memory reduction            | ~2×   | 2 models vs 4 models                                               |
+| Training time reduction         | ~3–5× | No generation step; the SFT-like loop is much faster per iteration |
+| Hyperparameters                 | 1 (β) | vs ~6+ for PPO                                                     |
+
 
 ---
 
 ## Questions & Open Problems
 
-- [ ] Offline vs online: DPO can't explore beyond the preference data distribution. For complex reasoning (math, code), does this ceiling matter? (GRPO's online approach may be better here)
-- [ ] On-policy DPO variants (iterative DPO, online DPO) try to bridge this gap — do they preserve DPO's simplicity?
-- [ ] The reference model must be loaded at every step. For 70B+ models, can you amortize or approximate reference log-probs without quality loss?
-- [ ] DPO assumes Bradley-Terry preferences (pairwise). Human preferences are often intransitive or context-dependent — does this assumption break down at scale?
+- Offline vs online: DPO can't explore beyond the preference data distribution. For complex reasoning (math, code), does this ceiling matter? (GRPO's online approach may be better here)
+- On-policy DPO variants (iterative DPO, online DPO) try to bridge this gap — do they preserve DPO's simplicity?
+- The reference model must be loaded at every step. For 70B+ models, can you amortize or approximate reference log-probs without quality loss?
+- DPO assumes Bradley-Terry preferences (pairwise). Human preferences are often intransitive or context-dependent — does this assumption break down at scale?
 
 ---
 
@@ -159,3 +171,4 @@ PPO loop per step:                     logp_w = policy(y_w|x)
 - The shift from PPO to DPO mirrors the monolith-vs-microservices tradeoff: PPO's 4-model architecture is flexible but operationally complex; DPO collapses it into a simpler system at the cost of losing online exploration. The reference model acts like a read replica — a frozen snapshot used only for inference, never updated.
 - In practice, DPO's simplicity made it the default alignment method for the open-source community (Llama 2, Zephyr, etc.). PPO remained dominant at labs with more compute (OpenAI, Anthropic) because online exploration matters for frontier models.
 - The tension between DPO (offline, simple) and PPO/GRPO (online, complex) is the central divide in alignment infrastructure. Understanding both sides is essential.
+
