@@ -34,6 +34,7 @@ Priority levels:
 | 15 | [InstructGPT](papers/rlhf/instructgpt.md) | ★★★ Core | Defines the canonical RLHF pipeline (SFT → RM → PPO); the 4-model setup is the infra baseline |
 | 16 | [DPO](papers/rlhf/dpo.md) | ★★☆ Important | Eliminates reward model and PPO loop; reduces 4 models to 2 — a 2x memory simplification |
 | 17 | [GRPO](papers/rlhf/grpo.md) | ★★★ Core | Eliminates critic via group sampling; online RLHF with only 2 models — the approach behind DeepSeek-R1 |
+| 18 | [HybridFlow](papers/rlhf/hybridflow.md) | ★★★ Core | RLHF as a dataflow scheduling problem; 3D-HybridEngine reshards actor between train and generate — the veRL paper |
 
 ---
 
